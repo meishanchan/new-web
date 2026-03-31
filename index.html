@@ -1,283 +1,299 @@
-import React, { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Mail, Instagram, Twitter } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japandi Journal | 自然風個人部落格</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind 系統配置 (對齊原先的 Design Tokens) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        linen: 'rgb(242, 240, 235)',
+                        mist: 'rgb(169, 181, 168)',
+                        wood: 'rgb(212, 197, 185)',
+                        ink: 'rgb(44, 42, 40)',
+                    },
+                    fontFamily: {
+                        sans: ['Montserrat', 'Noto Sans TC', 'sans-serif'],
+                        serif: ['Playfair Display', 'Noto Serif TC', 'serif'],
+                    },
+                    transitionTimingFunction: {
+                        natural: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    }
+                }
+            }
+        }
+    </script>
 
-// --- Design Tokens (Injected as inline styles for standalone environment) ---
-const themeStyles = {
-  '--color-linen': '242, 240, 235',
-  '--color-mist': '169, 181, 168',
-  '--color-wood': '212, 197, 185',
-  '--color-ink': '44, 42, 40',
-  '--font-serif': '"Playfair Display", "Noto Serif TC", serif',
-  '--font-sans': '"Montserrat", "Noto Sans TC", sans-serif',
-  '--ease-natural': 'cubic-bezier(0.16, 1, 0.3, 1)',
-};
+    <!-- 原生 CSS 動態引擎與格式設定 -->
+    <style>
+        :root {
+            background-color: theme('colors.linen');
+            color: theme('colors.ink');
+            font-family: theme('fontFamily.sans');
+            letter-spacing: 0.05em;
+        }
 
-// --- Mock Data ---
-const bentoPosts = [
-  {
-    id: 1,
-    title: '晨間霧氣與木質工藝的對話',
-    category: 'Design',
-    image: 'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=1200',
-    span: 'md:col-span-2 md:row-span-2',
-    aspect: 'aspect-[4/3] md:aspect-auto'
-  },
-  {
-    id: 2,
-    title: '留白空間中的本質',
-    category: 'Lifestyle',
-    image: 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&q=80&w=800',
-    span: 'md:col-span-1 md:row-span-1',
-    aspect: 'aspect-square'
-  },
-  {
-    id: 3,
-    title: '亞麻布料的觸覺記憶',
-    category: 'Texture',
-    image: 'https://images.unsplash.com/photo-1584286595398-a40f23075252?auto=format&fit=crop&q=80&w=800',
-    span: 'md:col-span-1 md:row-span-1',
-    aspect: 'aspect-square'
-  }
-];
+        /* 文字進場動態 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(2vh);
+            transition: opacity 1.2s theme('transitionTimingFunction.natural'), 
+                        transform 1.2s theme('transitionTimingFunction.natural');
+        }
+        
+        /* 圖片進場動態 */
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(1.1);
+            transition: opacity 1.8s theme('transitionTimingFunction.natural'), 
+                        transform 1.8s theme('transitionTimingFunction.natural');
+        }
 
-const latestPosts = [
-  { id: 4, title: '減法生活：剔除多餘的認知負荷', date: 'Oct 12, 2026' },
-  { id: 5, title: '尋找都市中的斯堪地那維亞角落', date: 'Sep 28, 2026' },
-  { id: 6, title: '自然光漫射的空間配置學', date: 'Sep 15, 2026' }
-];
+        /* 觸發狀態 */
+        .reveal.active, .reveal-scale.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
 
-// --- Micro-Interaction Variants ---
-const cardHoverVariants = {
-  rest: { scale: 1, filter: 'brightness(1)' },
-  hover: { 
-    scale: 1.02, 
-    filter: 'brightness(0.95)',
-    transition: { ease: [0.16, 1, 0.3, 1], duration: 0.6 }
-  }
-};
+        /* 錯開顯示延遲 */
+        .delay-1 { transition-delay: 0.15s; }
+        .delay-2 { transition-delay: 0.3s; }
 
-const textStaggerVariants = {
-  hidden: { opacity: 0, y: '2vh' },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { ease: [0.16, 1, 0.3, 1], duration: 1.2 }
-  }
-};
+        /* 卡片懸停微互動 */
+        .card-hover {
+            transition: transform 0.6s theme('transitionTimingFunction.natural'), 
+                        filter 0.6s theme('transitionTimingFunction.natural');
+        }
+        .card-hover:hover {
+            transform: scale(1.02);
+            filter: brightness(0.95);
+        }
 
-export default function App() {
-  const prefersReducedMotion = useReducedMotion();
-  const [isMounted, setIsMounted] = useState(false);
+        /* 無障礙規範：減少動態 (WCAG) */
+        @media (prefers-reduced-motion: reduce) {
+            .reveal, .reveal-scale, .card-hover, .group:hover .group-hover\:opacity-100 {
+                transition: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+                filter: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full overflow-x-hidden antialiased selection:bg-mist selection:text-ink">
 
-  useEffect(() => {
-    setIsMounted(true);
-    // Inject custom fonts dynamically for the preview environment
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    return () => document.head.removeChild(link);
-  }, []);
-
-  if (!isMounted) return null;
-
-  return (
-    <div 
-      className="min-h-screen w-full overflow-x-hidden antialiased selection:bg-[rgb(var(--color-mist))] selection:text-[rgb(var(--color-ink))]"
-      style={{
-        ...themeStyles,
-        backgroundColor: 'rgb(var(--color-linen))',
-        color: 'rgb(var(--color-ink))',
-        fontFamily: 'var(--font-sans)',
-        letterSpacing: '0.05em'
-      }}
-    >
-      {/* 1. Hero Section: Split Screen & Extreme Whitespace */}
-      <section className="relative min-h-[100vh] w-full flex flex-col md:flex-row items-stretch">
-        <div className="flex-1 flex flex-col justify-center px-[8vw] py-[15vh] md:py-0 z-10">
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: { transition: { staggerChildren: 0.15 } }
-            }}
-          >
-            <motion.p 
-              variants={prefersReducedMotion ? {} : textStaggerVariants}
-              className="text-sm md:text-base uppercase tracking-widest text-[rgb(var(--color-mist))] mb-[4vh]"
-            >
-              Wabi-Sabi & Japandi
-            </motion.p>
-            <motion.h1 
-              variants={prefersReducedMotion ? {} : textStaggerVariants}
-              className="text-5xl md:text-7xl lg:text-8xl leading-[1.1] mb-[6vh]"
-              style={{ fontFamily: 'var(--font-serif)', fontWeight: 400 }}
-            >
-              Embrace<br/>
-              <span className="italic text-[rgb(var(--color-mist))]">Imperfection</span>
-            </motion.h1>
-            <motion.p 
-              variants={prefersReducedMotion ? {} : textStaggerVariants}
-              className="max-w-[30ch] text-base md:text-lg leading-relaxed opacity-80"
-            >
-              探索自然材質紋理與極大化留白，降低認知負荷，讓生活本質成為絕對焦點。
-            </motion.p>
-          </motion.div>
+    <!-- 1. Hero Section: Split Screen & Extreme Whitespace -->
+    <section class="relative min-h-[100vh] w-full flex flex-col md:flex-row items-stretch">
+        <div class="flex-1 flex flex-col justify-center px-[8vw] py-[15vh] md:py-0 z-10">
+            <div>
+                <p class="reveal text-sm md:text-base uppercase tracking-widest text-mist mb-[4vh]">
+                    Wabi-Sabi & Japandi
+                </p>
+                <h1 class="reveal delay-1 text-5xl md:text-7xl lg:text-8xl leading-[1.1] mb-[6vh] font-serif font-normal">
+                    Embrace<br/>
+                    <span class="italic text-mist">Imperfection</span>
+                </h1>
+                <p class="reveal delay-2 max-w-[30ch] text-base md:text-lg leading-relaxed opacity-80">
+                    探索自然材質紋理與極大化留白，降低認知負荷，讓生活本質成為絕對焦點。
+                </p>
+            </div>
         </div>
-        <div className="flex-1 relative min-h-[50vh] md:min-h-full">
-          {/* Asymmetric Image Bleeding */}
-          <div className="absolute top-[5vh] bottom-0 right-0 left-[5vw] md:left-0 md:top-[10vh] md:bottom-[10vh] md:right-[5vw] bg-[rgb(var(--color-wood))] overflow-hidden">
-            <motion.img 
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ ease: [0.16, 1, 0.3, 1], duration: 1.8 }}
-              src="https://images.unsplash.com/photo-1493150134365-85db496924c0?auto=format&fit=crop&q=80&w=1200" 
-              alt="極簡木質室內空間，陽光灑落"
-              className="w-full h-full object-cover mix-blend-multiply opacity-90"
-            />
-          </div>
+        <div class="flex-1 relative min-h-[50vh] md:min-h-full">
+            <!-- Asymmetric Image Bleeding -->
+            <div class="absolute top-[5vh] bottom-0 right-0 left-[5vw] md:left-0 md:top-[10vh] md:bottom-[10vh] md:right-[5vw] bg-wood overflow-hidden">
+                <img 
+                    src="https://images.unsplash.com/photo-1493150134365-85db496924c0?auto=format&fit=crop&q=80&w=1200" 
+                    alt="極簡木質室內空間，陽光灑落"
+                    class="reveal-scale w-full h-full object-cover mix-blend-multiply opacity-90"
+                />
+            </div>
         </div>
-      </section>
+    </section>
 
-      {/* 2. Featured Posts: Bento Grids */}
-      <section className="w-full px-[5vw] py-[15vh]">
-        <h2 
-          className="text-3xl md:text-4xl mb-[8vh]"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
-          Curated Stories
+    <!-- 2. Featured Posts: Bento Grids -->
+    <section class="w-full px-[5vw] py-[15vh]">
+        <h2 class="reveal text-3xl md:text-4xl mb-[8vh] font-serif">
+            Curated Stories
         </h2>
         
-        {/* CSS Grid for Bento Layout - Overriding 12 col system */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[2vw] md:auto-rows-[45vh]">
-          {bentoPosts.map((post) => (
-            <motion.article 
-              key={post.id}
-              initial="rest"
-              whileHover={prefersReducedMotion ? "rest" : "hover"}
-              variants={cardHoverVariants}
-              className={`relative group cursor-pointer overflow-hidden bg-[rgb(var(--color-wood))] ${post.span} ${post.aspect}`}
-            >
-              <img 
-                src={post.image} 
-                alt={post.title}
-                className="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-700 group-hover:opacity-100"
-              />
-              {/* Gestalt Principle: Using padding and placement instead of background/borders for text */}
-              <div className="absolute inset-0 p-[2rem] flex flex-col justify-end bg-gradient-to-t from-[rgb(var(--color-ink))]/60 to-transparent">
-                <span className="text-[rgb(var(--color-linen))] text-sm tracking-widest uppercase mb-[1vh]">
-                  {post.category}
-                </span>
-                <h3 
-                  className="text-2xl text-[rgb(var(--color-linen))]"
-                  style={{ fontFamily: 'var(--font-serif)' }}
+        <!-- CSS Grid for Bento Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-[2vw] md:auto-rows-[45vh]">
+            
+            <article class="reveal card-hover relative group cursor-pointer overflow-hidden bg-wood md:col-span-2 md:row-span-2 aspect-[4/3] md:aspect-auto">
+                <img src="https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=1200" alt="晨間霧氣與木質工藝的對話" class="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-700 group-hover:opacity-100"/>
+                <div class="absolute inset-0 p-[2rem] flex flex-col justify-end bg-gradient-to-t from-ink/60 to-transparent">
+                    <span class="text-linen text-sm tracking-widest uppercase mb-[1vh]">Design</span>
+                    <h3 class="text-2xl text-linen font-serif">晨間霧氣與木質工藝的對話</h3>
+                </div>
+            </article>
+
+            <article class="reveal delay-1 card-hover relative group cursor-pointer overflow-hidden bg-wood md:col-span-1 md:row-span-1 aspect-square">
+                <img src="https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&q=80&w=800" alt="留白空間中的本質" class="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-700 group-hover:opacity-100"/>
+                <div class="absolute inset-0 p-[2rem] flex flex-col justify-end bg-gradient-to-t from-ink/60 to-transparent">
+                    <span class="text-linen text-sm tracking-widest uppercase mb-[1vh]">Lifestyle</span>
+                    <h3 class="text-2xl text-linen font-serif">留白空間中的本質</h3>
+                </div>
+            </article>
+
+            <article class="reveal delay-2 card-hover relative group cursor-pointer overflow-hidden bg-wood md:col-span-1 md:row-span-1 aspect-square">
+                <img src="https://images.unsplash.com/photo-1584286595398-a40f23075252?auto=format&fit=crop&q=80&w=800" alt="亞麻布料的觸覺記憶" class="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-700 group-hover:opacity-100"/>
+                <div class="absolute inset-0 p-[2rem] flex flex-col justify-end bg-gradient-to-t from-ink/60 to-transparent">
+                    <span class="text-linen text-sm tracking-widest uppercase mb-[1vh]">Texture</span>
+                    <h3 class="text-2xl text-linen font-serif">亞麻布料的觸覺記憶</h3>
+                </div>
+            </article>
+
+        </div>
+    </section>
+
+    <!-- 3. Latest Posts: Asymmetric List -->
+    <section class="w-full px-[5vw] py-[10vh] bg-wood/20">
+        <div class="max-w-[60vw] md:max-w-[40vw] ml-auto">
+            <h2 class="reveal text-3xl md:text-4xl mb-[8vh] font-serif">
+                Recent Thoughts
+            </h2>
+            <div class="flex flex-col gap-[6vh]">
+                
+                <div class="reveal group cursor-pointer flex flex-col md:flex-row md:items-baseline gap-[1rem] md:gap-[3rem] transition-transform duration-500 ease-out hover:translate-x-[1vw]">
+                    <span class="text-sm opacity-60 w-[10ch] shrink-0">Oct 12, 2026</span>
+                    <h3 class="text-lg md:text-xl relative inline-flex items-center gap-4">
+                        減法生活：剔除多餘的認知負荷
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 opacity-0 -translate-x-4 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-x-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+                    </h3>
+                </div>
+
+                <div class="reveal delay-1 group cursor-pointer flex flex-col md:flex-row md:items-baseline gap-[1rem] md:gap-[3rem] transition-transform duration-500 ease-out hover:translate-x-[1vw]">
+                    <span class="text-sm opacity-60 w-[10ch] shrink-0">Sep 28, 2026</span>
+                    <h3 class="text-lg md:text-xl relative inline-flex items-center gap-4">
+                        尋找都市中的斯堪地那維亞角落
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 opacity-0 -translate-x-4 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-x-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+                    </h3>
+                </div>
+
+                <div class="reveal delay-2 group cursor-pointer flex flex-col md:flex-row md:items-baseline gap-[1rem] md:gap-[3rem] transition-transform duration-500 ease-out hover:translate-x-[1vw]">
+                    <span class="text-sm opacity-60 w-[10ch] shrink-0">Sep 15, 2026</span>
+                    <h3 class="text-lg md:text-xl relative inline-flex items-center gap-4">
+                        自然光漫射的空間配置學
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 opacity-0 -translate-x-4 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-x-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+                    </h3>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. About / Social: Overlapping & Bleeding -->
+    <section class="relative w-full py-[20vh] px-[5vw] flex flex-col md:flex-row items-center justify-center gap-[5vw]">
+        <div class="w-full md:w-[40%] relative z-10 md:-mr-[10vw] mb-[5vh] md:mb-0">
+            <h2 class="reveal text-4xl md:text-6xl mb-[4vh] font-serif">
+                The Author
+            </h2>
+            <p class="reveal delay-1 text-base leading-relaxed opacity-80 max-w-[45ch]">
+                身處數位洪流，透過文字與影像捕捉瞬間的寧靜。崇尚斯堪地那維亞的實用主義與日本侘寂美學，將兩者融合於生活實踐之中。
+            </p>
+        </div>
+        <div class="w-full md:w-[50%] z-0">
+            <div class="aspect-[3/4] md:aspect-square bg-mist/30 overflow-hidden relative">
+                <img 
+                    src="https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=800" 
+                    alt="陶瓷茶杯置於亞麻布上"
+                    class="reveal-scale absolute top-[10%] left-[10%] w-[90%] h-[90%] object-cover mix-blend-luminosity"
+                />
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Pure Footer & Newsletter -->
+    <footer class="w-full px-[5vw] pt-[15vh] pb-[5vh] flex flex-col items-center text-center">
+        <div class="max-w-[400px] w-full mb-[15vh]">
+            <h2 class="reveal text-2xl mb-[2vh] font-serif">
+                Join the Journal
+            </h2>
+            <p class="reveal delay-1 text-sm opacity-70 mb-[4vh]">
+                每月一封信件，分享關於生活美學的沉澱與思考。
+            </p>
+            <form class="reveal delay-2 flex w-full" onsubmit="event.preventDefault()">
+                <input 
+                    type="email" 
+                    placeholder="Your email address" 
+                    aria-label="Email address"
+                    class="flex-1 bg-transparent py-[1rem] placeholder:text-ink/40 text-center focus:outline-none focus:bg-wood/10 transition-colors"
+                />
+                <button 
+                    type="submit"
+                    aria-label="Subscribe"
+                    class="px-[2rem] py-[1rem] bg-ink text-linen hover:bg-mist transition-colors duration-500 ease-out"
                 >
-                  {post.title}
-                </h3>
-              </div>
-            </motion.article>
-          ))}
-        </div>
-      </section>
-
-      {/* 3. Latest Posts: Asymmetric List */}
-      <section className="w-full px-[5vw] py-[10vh] bg-[rgb(var(--color-wood))]/20">
-        <div className="max-w-[60vw] md:max-w-[40vw] ml-auto">
-          <h2 
-            className="text-3xl md:text-4xl mb-[8vh]"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            Recent Thoughts
-          </h2>
-          <div className="flex flex-col gap-[6vh]">
-            {latestPosts.map((post) => (
-              <motion.div 
-                key={post.id}
-                whileHover={{ x: '1vw' }}
-                transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.4 }}
-                className="group cursor-pointer flex flex-col md:flex-row md:items-baseline gap-[1rem] md:gap-[3rem]"
-              >
-                <span className="text-sm opacity-60 w-[10ch] shrink-0">{post.date}</span>
-                <h3 className="text-lg md:text-xl relative inline-flex items-center gap-4">
-                  {post.title}
-                  <ArrowUpRight className="w-5 h-5 opacity-0 -translate-x-4 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-x-0" />
-                </h3>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. About / Social: Overlapping & Bleeding */}
-      <section className="relative w-full py-[20vh] px-[5vw] flex flex-col md:flex-row items-center justify-center gap-[5vw]">
-        <div className="w-full md:w-[40%] relative z-10 md:-mr-[10vw] mb-[5vh] md:mb-0">
-          <h2 
-            className="text-4xl md:text-6xl mb-[4vh]"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            The Author
-          </h2>
-          <p className="text-base leading-relaxed opacity-80 max-w-[45ch]">
-            身處數位洪流，透過文字與影像捕捉瞬間的寧靜。崇尚斯堪地那維亞的實用主義與日本侘寂美學，將兩者融合於生活實踐之中。
-          </p>
-        </div>
-        <div className="w-full md:w-[50%] z-0">
-          <div className="aspect-[3/4] md:aspect-square bg-[rgb(var(--color-mist))]/30 overflow-hidden relative">
-            <motion.img 
-              initial={{ scale: 1.05 }}
-              whileInView={{ scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ ease: [0.16, 1, 0.3, 1], duration: 2 }}
-              src="https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=800" 
-              alt="陶瓷茶杯置於亞麻布上"
-              className="absolute top-[10%] left-[10%] w-[90%] h-[90%] object-cover mix-blend-luminosity"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Pure Footer & Newsletter */}
-      <footer className="w-full px-[5vw] pt-[15vh] pb-[5vh] flex flex-col items-center text-center">
-        <div className="max-w-[400px] w-full mb-[15vh]">
-          <h2 
-            className="text-2xl mb-[2vh]"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            Join the Journal
-          </h2>
-          <p className="text-sm opacity-70 mb-[4vh]">
-            每月一封信件，分享關於生活美學的沉澱與思考。
-          </p>
-          {/* Form relying on margins, no borders/shadows */}
-          <form className="flex w-full" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="Your email address" 
-              aria-label="Email address"
-              className="flex-1 bg-transparent py-[1rem] placeholder:text-[rgb(var(--color-ink))]/40 text-center focus:outline-none focus:bg-[rgb(var(--color-wood))]/10 transition-colors"
-            />
-            <button 
-              type="submit"
-              aria-label="Subscribe"
-              className="px-[2rem] py-[1rem] bg-[rgb(var(--color-ink))] text-[rgb(var(--color-linen))] hover:bg-[rgb(var(--color-mist))] transition-colors duration-500 ease-out"
-            >
-              Subscribe
-            </button>
-          </form>
+                    Subscribe
+                </button>
+            </form>
         </div>
 
-        <div className="w-full flex flex-col md:flex-row justify-between items-center gap-[4vh]">
-          <p className="text-xs opacity-50 uppercase tracking-widest">
-            © 2026 Japandi Journal.
-          </p>
-          <div className="flex gap-[2vw]">
-            <a href="#" aria-label="Instagram" className="opacity-60 hover:opacity-100 transition-opacity"><Instagram className="w-5 h-5" /></a>
-            <a href="#" aria-label="Twitter" className="opacity-60 hover:opacity-100 transition-opacity"><Twitter className="w-5 h-5" /></a>
-            <a href="#" aria-label="Email" className="opacity-60 hover:opacity-100 transition-opacity"><Mail className="w-5 h-5" /></a>
-          </div>
+        <div class="w-full flex flex-col md:flex-row justify-between items-center gap-[4vh]">
+            <p class="text-xs opacity-50 uppercase tracking-widest">
+                © 2026 Japandi Journal.
+            </p>
+            <div class="flex gap-[2vw]">
+                <!-- Instagram Icon -->
+                <a href="#" aria-label="Instagram" class="opacity-60 hover:opacity-100 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                </a>
+                <!-- Twitter Icon -->
+                <a href="#" aria-label="Twitter" class="opacity-60 hover:opacity-100 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+                </a>
+                <!-- Mail Icon -->
+                <a href="#" aria-label="Email" class="opacity-60 hover:opacity-100 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </a>
+            </div>
         </div>
-      </footer>
-    </div>
-  );
-}
+    </footer>
+
+    <!-- Intersection Observer 初始化 (取代 Framer Motion 滾動觸發) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 檢查使用者是否偏好減少動態 (WCAG 規範)
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            if (!prefersReducedMotion) {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.15
+                };
+
+                const observer = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('active');
+                            // 觸發後即解除觀察，保持效能
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+
+                // 選取所有具備進場類別的元素
+                const revealElements = document.querySelectorAll('.reveal, .reveal-scale');
+                revealElements.forEach(el => observer.observe(el));
+            } else {
+                // 若使用者偏好減少動態，直接展開所有內容
+                const revealElements = document.querySelectorAll('.reveal, .reveal-scale');
+                revealElements.forEach(el => el.classList.add('active'));
+            }
+        });
+    </script>
+</body>
+</html>
