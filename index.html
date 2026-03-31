@@ -1,0 +1,283 @@
+import React, { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowUpRight, Mail, Instagram, Twitter } from 'lucide-react';
+
+// --- Design Tokens (Injected as inline styles for standalone environment) ---
+const themeStyles = {
+  '--color-linen': '242, 240, 235',
+  '--color-mist': '169, 181, 168',
+  '--color-wood': '212, 197, 185',
+  '--color-ink': '44, 42, 40',
+  '--font-serif': '"Playfair Display", "Noto Serif TC", serif',
+  '--font-sans': '"Montserrat", "Noto Sans TC", sans-serif',
+  '--ease-natural': 'cubic-bezier(0.16, 1, 0.3, 1)',
+};
+
+// --- Mock Data ---
+const bentoPosts = [
+  {
+    id: 1,
+    title: '晨間霧氣與木質工藝的對話',
+    category: 'Design',
+    image: 'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=1200',
+    span: 'md:col-span-2 md:row-span-2',
+    aspect: 'aspect-[4/3] md:aspect-auto'
+  },
+  {
+    id: 2,
+    title: '留白空間中的本質',
+    category: 'Lifestyle',
+    image: 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&q=80&w=800',
+    span: 'md:col-span-1 md:row-span-1',
+    aspect: 'aspect-square'
+  },
+  {
+    id: 3,
+    title: '亞麻布料的觸覺記憶',
+    category: 'Texture',
+    image: 'https://images.unsplash.com/photo-1584286595398-a40f23075252?auto=format&fit=crop&q=80&w=800',
+    span: 'md:col-span-1 md:row-span-1',
+    aspect: 'aspect-square'
+  }
+];
+
+const latestPosts = [
+  { id: 4, title: '減法生活：剔除多餘的認知負荷', date: 'Oct 12, 2026' },
+  { id: 5, title: '尋找都市中的斯堪地那維亞角落', date: 'Sep 28, 2026' },
+  { id: 6, title: '自然光漫射的空間配置學', date: 'Sep 15, 2026' }
+];
+
+// --- Micro-Interaction Variants ---
+const cardHoverVariants = {
+  rest: { scale: 1, filter: 'brightness(1)' },
+  hover: { 
+    scale: 1.02, 
+    filter: 'brightness(0.95)',
+    transition: { ease: [0.16, 1, 0.3, 1], duration: 0.6 }
+  }
+};
+
+const textStaggerVariants = {
+  hidden: { opacity: 0, y: '2vh' },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { ease: [0.16, 1, 0.3, 1], duration: 1.2 }
+  }
+};
+
+export default function App() {
+  const prefersReducedMotion = useReducedMotion();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Inject custom fonts dynamically for the preview environment
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
+
+  if (!isMounted) return null;
+
+  return (
+    <div 
+      className="min-h-screen w-full overflow-x-hidden antialiased selection:bg-[rgb(var(--color-mist))] selection:text-[rgb(var(--color-ink))]"
+      style={{
+        ...themeStyles,
+        backgroundColor: 'rgb(var(--color-linen))',
+        color: 'rgb(var(--color-ink))',
+        fontFamily: 'var(--font-sans)',
+        letterSpacing: '0.05em'
+      }}
+    >
+      {/* 1. Hero Section: Split Screen & Extreme Whitespace */}
+      <section className="relative min-h-[100vh] w-full flex flex-col md:flex-row items-stretch">
+        <div className="flex-1 flex flex-col justify-center px-[8vw] py-[15vh] md:py-0 z-10">
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.15 } }
+            }}
+          >
+            <motion.p 
+              variants={prefersReducedMotion ? {} : textStaggerVariants}
+              className="text-sm md:text-base uppercase tracking-widest text-[rgb(var(--color-mist))] mb-[4vh]"
+            >
+              Wabi-Sabi & Japandi
+            </motion.p>
+            <motion.h1 
+              variants={prefersReducedMotion ? {} : textStaggerVariants}
+              className="text-5xl md:text-7xl lg:text-8xl leading-[1.1] mb-[6vh]"
+              style={{ fontFamily: 'var(--font-serif)', fontWeight: 400 }}
+            >
+              Embrace<br/>
+              <span className="italic text-[rgb(var(--color-mist))]">Imperfection</span>
+            </motion.h1>
+            <motion.p 
+              variants={prefersReducedMotion ? {} : textStaggerVariants}
+              className="max-w-[30ch] text-base md:text-lg leading-relaxed opacity-80"
+            >
+              探索自然材質紋理與極大化留白，降低認知負荷，讓生活本質成為絕對焦點。
+            </motion.p>
+          </motion.div>
+        </div>
+        <div className="flex-1 relative min-h-[50vh] md:min-h-full">
+          {/* Asymmetric Image Bleeding */}
+          <div className="absolute top-[5vh] bottom-0 right-0 left-[5vw] md:left-0 md:top-[10vh] md:bottom-[10vh] md:right-[5vw] bg-[rgb(var(--color-wood))] overflow-hidden">
+            <motion.img 
+              initial={{ scale: 1.1, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ ease: [0.16, 1, 0.3, 1], duration: 1.8 }}
+              src="https://images.unsplash.com/photo-1493150134365-85db496924c0?auto=format&fit=crop&q=80&w=1200" 
+              alt="極簡木質室內空間，陽光灑落"
+              className="w-full h-full object-cover mix-blend-multiply opacity-90"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Featured Posts: Bento Grids */}
+      <section className="w-full px-[5vw] py-[15vh]">
+        <h2 
+          className="text-3xl md:text-4xl mb-[8vh]"
+          style={{ fontFamily: 'var(--font-serif)' }}
+        >
+          Curated Stories
+        </h2>
+        
+        {/* CSS Grid for Bento Layout - Overriding 12 col system */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[2vw] md:auto-rows-[45vh]">
+          {bentoPosts.map((post) => (
+            <motion.article 
+              key={post.id}
+              initial="rest"
+              whileHover={prefersReducedMotion ? "rest" : "hover"}
+              variants={cardHoverVariants}
+              className={`relative group cursor-pointer overflow-hidden bg-[rgb(var(--color-wood))] ${post.span} ${post.aspect}`}
+            >
+              <img 
+                src={post.image} 
+                alt={post.title}
+                className="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-700 group-hover:opacity-100"
+              />
+              {/* Gestalt Principle: Using padding and placement instead of background/borders for text */}
+              <div className="absolute inset-0 p-[2rem] flex flex-col justify-end bg-gradient-to-t from-[rgb(var(--color-ink))]/60 to-transparent">
+                <span className="text-[rgb(var(--color-linen))] text-sm tracking-widest uppercase mb-[1vh]">
+                  {post.category}
+                </span>
+                <h3 
+                  className="text-2xl text-[rgb(var(--color-linen))]"
+                  style={{ fontFamily: 'var(--font-serif)' }}
+                >
+                  {post.title}
+                </h3>
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. Latest Posts: Asymmetric List */}
+      <section className="w-full px-[5vw] py-[10vh] bg-[rgb(var(--color-wood))]/20">
+        <div className="max-w-[60vw] md:max-w-[40vw] ml-auto">
+          <h2 
+            className="text-3xl md:text-4xl mb-[8vh]"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            Recent Thoughts
+          </h2>
+          <div className="flex flex-col gap-[6vh]">
+            {latestPosts.map((post) => (
+              <motion.div 
+                key={post.id}
+                whileHover={{ x: '1vw' }}
+                transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.4 }}
+                className="group cursor-pointer flex flex-col md:flex-row md:items-baseline gap-[1rem] md:gap-[3rem]"
+              >
+                <span className="text-sm opacity-60 w-[10ch] shrink-0">{post.date}</span>
+                <h3 className="text-lg md:text-xl relative inline-flex items-center gap-4">
+                  {post.title}
+                  <ArrowUpRight className="w-5 h-5 opacity-0 -translate-x-4 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:translate-x-0" />
+                </h3>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. About / Social: Overlapping & Bleeding */}
+      <section className="relative w-full py-[20vh] px-[5vw] flex flex-col md:flex-row items-center justify-center gap-[5vw]">
+        <div className="w-full md:w-[40%] relative z-10 md:-mr-[10vw] mb-[5vh] md:mb-0">
+          <h2 
+            className="text-4xl md:text-6xl mb-[4vh]"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            The Author
+          </h2>
+          <p className="text-base leading-relaxed opacity-80 max-w-[45ch]">
+            身處數位洪流，透過文字與影像捕捉瞬間的寧靜。崇尚斯堪地那維亞的實用主義與日本侘寂美學，將兩者融合於生活實踐之中。
+          </p>
+        </div>
+        <div className="w-full md:w-[50%] z-0">
+          <div className="aspect-[3/4] md:aspect-square bg-[rgb(var(--color-mist))]/30 overflow-hidden relative">
+            <motion.img 
+              initial={{ scale: 1.05 }}
+              whileInView={{ scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ ease: [0.16, 1, 0.3, 1], duration: 2 }}
+              src="https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=800" 
+              alt="陶瓷茶杯置於亞麻布上"
+              className="absolute top-[10%] left-[10%] w-[90%] h-[90%] object-cover mix-blend-luminosity"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Pure Footer & Newsletter */}
+      <footer className="w-full px-[5vw] pt-[15vh] pb-[5vh] flex flex-col items-center text-center">
+        <div className="max-w-[400px] w-full mb-[15vh]">
+          <h2 
+            className="text-2xl mb-[2vh]"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            Join the Journal
+          </h2>
+          <p className="text-sm opacity-70 mb-[4vh]">
+            每月一封信件，分享關於生活美學的沉澱與思考。
+          </p>
+          {/* Form relying on margins, no borders/shadows */}
+          <form className="flex w-full" onSubmit={(e) => e.preventDefault()}>
+            <input 
+              type="email" 
+              placeholder="Your email address" 
+              aria-label="Email address"
+              className="flex-1 bg-transparent py-[1rem] placeholder:text-[rgb(var(--color-ink))]/40 text-center focus:outline-none focus:bg-[rgb(var(--color-wood))]/10 transition-colors"
+            />
+            <button 
+              type="submit"
+              aria-label="Subscribe"
+              className="px-[2rem] py-[1rem] bg-[rgb(var(--color-ink))] text-[rgb(var(--color-linen))] hover:bg-[rgb(var(--color-mist))] transition-colors duration-500 ease-out"
+            >
+              Subscribe
+            </button>
+          </form>
+        </div>
+
+        <div className="w-full flex flex-col md:flex-row justify-between items-center gap-[4vh]">
+          <p className="text-xs opacity-50 uppercase tracking-widest">
+            © 2026 Japandi Journal.
+          </p>
+          <div className="flex gap-[2vw]">
+            <a href="#" aria-label="Instagram" className="opacity-60 hover:opacity-100 transition-opacity"><Instagram className="w-5 h-5" /></a>
+            <a href="#" aria-label="Twitter" className="opacity-60 hover:opacity-100 transition-opacity"><Twitter className="w-5 h-5" /></a>
+            <a href="#" aria-label="Email" className="opacity-60 hover:opacity-100 transition-opacity"><Mail className="w-5 h-5" /></a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
